@@ -1,18 +1,29 @@
 [package]
-name = "phase2"
+name = "masp-phase2"
 version = "0.2.2"
 authors = ["Sean Bowe <ewillbefull@gmail.com>"]
 description = "Library for performing MPCs for creating zk-SNARK public parameters"
 documentation = "https://docs.rs/phase2"
-homepage = "https://github.com/ebfull/phase2"
+homepage = "https://github.com/heliaxdev/masp-phase2"
 license = "MIT/Apache-2.0"
-repository = "https://github.com/ebfull/phase2"
+repository = "https://github.com/heliaxdev/masp-phase2"
+edition = "2021"
 
 [dependencies]
-pairing = "0.14"
-rand = "0.4"
-bellman = "0.1"
+pairing = "0.21.0"
+rand = "0.8.5"
+bellman = "0.11.1"
 byteorder = "1"
 num_cpus = "1"
-crossbeam = "0.3"
-blake2-rfc = "0.2"
+crossbeam = "0.8.1"
+blake2 = "0.10.4"
+bls12_381 = "0.6"
+group = "0.11.0"
+ff = "0.11.0"
+rand_chacha = "0.3.1"
+zeroize = {version = "1.5.4", features = ["derive"] }
+itertools = "0.10.3"
+
+[profile.release]
+lto = true
+codegen-units = 1
