@@ -224,7 +224,7 @@ use bellman::{
     groth16::{Parameters, VerifyingKey},
     Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable,
 };
-use zeroize::{Zeroize, ZeroizeOnDrop};
+//use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
