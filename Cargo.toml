@@ -1,7 +1,7 @@
 [package]
 name = "masp-phase2"
-version = "0.2.2"
-authors = ["Sean Bowe <ewillbefull@gmail.com>"]
+version = "0.2.3"
+authors = ["Sean Bowe <ewillbefull@gmail.com>", "joe@heliax.dev"]
 description = "Library for performing MPCs for creating zk-SNARK public parameters"
 documentation = "https://docs.rs/phase2"
 homepage = "https://github.com/heliaxdev/masp-phase2"
