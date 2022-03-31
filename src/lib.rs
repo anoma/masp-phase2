@@ -208,9 +208,7 @@ use std::{
 use blake2::Digest;
 use bls12_381::{Bls12, G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
 use ff::{Field, PrimeField};
-use group::{
-    prime::PrimeCurveAffine, Curve, Group, GroupEncoding, UncompressedEncoding, Wnaf, WnafGroup,
-};
+use group::{prime::PrimeCurveAffine, Curve, Group, UncompressedEncoding, Wnaf, WnafGroup};
 use pairing::PairingCurveAffine;
 use std::ops::AddAssign;
 use std::ops::Mul;
@@ -219,6 +217,9 @@ use std::ops::Mul;
 use bellman::multicore::Worker;
 #[cfg(feature = "wasm")]
 use bellman::singlecore::Worker;
+
+#[cfg(feature = "fast-deserialize")]
+pub mod fast_deserialize;
 
 use bellman::{
     groth16::{Parameters, VerifyingKey},
@@ -424,7 +425,7 @@ impl MPCParameters {
             let mut g1_repr = <G1Affine as UncompressedEncoding>::Uncompressed::default();
             reader.read_exact(g1_repr.as_mut())?;
 
-            let affine = <G1Affine as UncompressedEncoding>::from_uncompressed(&g1_repr);
+            let affine = <G1Affine as UncompressedEncoding>::from_uncompressed_unchecked(&g1_repr);
             if affine.is_some().into() {
                 Ok(affine.unwrap())
             } else {
@@ -436,7 +437,7 @@ impl MPCParameters {
             let mut g2_repr = <G2Affine as UncompressedEncoding>::Uncompressed::default();
             reader.read_exact(g2_repr.as_mut())?;
 
-            let affine = <G2Affine as UncompressedEncoding>::from_uncompressed(&g2_repr);
+            let affine = <G2Affine as UncompressedEncoding>::from_uncompressed_unchecked(&g2_repr);
             if affine.is_some().into() {
                 Ok(affine.unwrap())
             } else {
@@ -961,6 +962,9 @@ impl MPCParameters {
     /// we won't perform curve validity and group order
     /// checks.
     pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<MPCParameters> {
+        #[cfg(feature = "fast-deserialize")]
+        let params = fast_deserialize::read(&mut reader, checked)?;
+        #[cfg(not(feature = "fast-deserialize"))]
         let params = Parameters::read(&mut reader, checked)?;
 
         let mut cs_hash = [0u8; 64];
