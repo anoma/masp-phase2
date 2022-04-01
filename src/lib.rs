@@ -206,7 +206,6 @@ use std::{
 };
 
 use blake2::Digest;
-use bls12_381::{Bls12, G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
 use ff::{Field, PrimeField};
 use group::{prime::PrimeCurveAffine, Curve, Group, UncompressedEncoding, Wnaf, WnafGroup};
 use pairing::PairingCurveAffine;
@@ -220,6 +219,11 @@ use bellman::singlecore::Worker;
 
 #[cfg(feature = "fast-deserialize")]
 pub mod fast_deserialize;
+#[cfg(feature = "fast-deserialize")]
+use fast_bls12_381::{Bls12, G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
+
+#[cfg(not(feature = "fast-deserialize"))]
+use bls12_381::{Bls12, G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
 
 use bellman::{
     groth16::{Parameters, VerifyingKey},
