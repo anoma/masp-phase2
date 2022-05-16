@@ -1,34 +1,30 @@
 [package]
-name = "masp-phase2"
-version = "0.2.3"
 authors = ["Sean Bowe <ewillbefull@gmail.com>", "joe@heliax.dev"]
 description = "Library for performing MPCs for creating zk-SNARK public parameters"
 documentation = "https://docs.rs/phase2"
+edition = "2021"
 homepage = "https://github.com/heliaxdev/masp-phase2"
 license = "MIT/Apache-2.0"
+name = "masp-phase2"
 repository = "https://github.com/heliaxdev/masp-phase2"
-edition = "2021"
+version = "0.2.3"
 
 [dependencies]
+bellman = "0.11.1"
+blake2 = "0.10.4"
+bls12_381 = "0.6.1"
+byteorder = "1"
+crossbeam = "0.8.1"
+ff = "0.11.0"
+group = "0.11.0"
+num_cpus = "1"
 pairing = "0.21.0"
 rand = "0.8.5"
-bellman = "0.11.1"
-byteorder = "1"
-num_cpus = "1"
-crossbeam = "0.8.1"
-blake2 = "0.10.4"
-bls12_381 = { version = "0.6" }
-fast_bls12_381 = { package = "bls12_381", git = "https://github.com/joebebel/bls12_381", branch = "joe/fast_subgroup_check", optional = true}
-group = "0.11.0"
-ff = "0.11.0"
 rand_chacha = "0.3.1"
 #zeroize = {version = "1.5.4", features = ["derive"] }
 itertools = "0.10.3"
-rayon = { version = "1.5.1", optional = true }
-
-[features]
-fast-deserialize = ["fast_bls12_381", "rayon"]
+rayon = {version = "1.5.1", optional = true}
 
 [profile.release]
-lto = true
 codegen-units = 1
+lto = true

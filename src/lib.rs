@@ -217,12 +217,6 @@ use bellman::multicore::Worker;
 #[cfg(feature = "wasm")]
 use bellman::singlecore::Worker;
 
-#[cfg(feature = "fast-deserialize")]
-pub mod fast_deserialize;
-#[cfg(feature = "fast-deserialize")]
-use fast_bls12_381::{Bls12, G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
-
-#[cfg(not(feature = "fast-deserialize"))]
 use bls12_381::{Bls12, G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
 
 use bellman::{
@@ -966,9 +960,6 @@ impl MPCParameters {
     /// we won't perform curve validity and group order
     /// checks.
     pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<MPCParameters> {
-        #[cfg(feature = "fast-deserialize")]
-        let params = fast_deserialize::read(&mut reader, checked)?;
-        #[cfg(not(feature = "fast-deserialize"))]
         let params = Parameters::read(&mut reader, checked)?;
 
         let mut cs_hash = [0u8; 64];
