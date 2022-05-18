@@ -1,6 +1,6 @@
 use bellman::groth16::{Parameters, VerifyingKey};
+use bls12_381::{Bls12, G1Affine, G2Affine};
 use byteorder::{BigEndian, ReadBytesExt};
-use fast_bls12_381::{Bls12, G1Affine, G2Affine};
 use group::UncompressedEncoding;
 use rayon::prelude::*;
 use std::io::{self, Read};
