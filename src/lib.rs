@@ -206,11 +206,8 @@ use std::{
 };
 
 use blake2::Digest;
-use bls12_381::{Bls12, G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
 use ff::{Field, PrimeField};
-use group::{
-    prime::PrimeCurveAffine, Curve, Group, GroupEncoding, UncompressedEncoding, Wnaf, WnafGroup,
-};
+use group::{prime::PrimeCurveAffine, Curve, Group, UncompressedEncoding, Wnaf, WnafGroup};
 use pairing::PairingCurveAffine;
 use std::ops::AddAssign;
 use std::ops::Mul;
@@ -220,11 +217,14 @@ use bellman::multicore::Worker;
 #[cfg(feature = "wasm")]
 use bellman::singlecore::Worker;
 
+pub mod fast_deserialize;
+use bls12_381::{Bls12, G1Affine, G1Projective, G2Affine, G2Projective, Scalar};
+
 use bellman::{
     groth16::{Parameters, VerifyingKey},
     Circuit, ConstraintSystem, Index, LinearCombination, SynthesisError, Variable,
 };
-use zeroize::{Zeroize, ZeroizeOnDrop};
+//use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use rand::{Rng, SeedableRng};
 use rand_chacha::ChaChaRng;
@@ -424,7 +424,7 @@ impl MPCParameters {
             let mut g1_repr = <G1Affine as UncompressedEncoding>::Uncompressed::default();
             reader.read_exact(g1_repr.as_mut())?;
 
-            let affine = <G1Affine as UncompressedEncoding>::from_uncompressed(&g1_repr);
+            let affine = <G1Affine as UncompressedEncoding>::from_uncompressed_unchecked(&g1_repr);
             if affine.is_some().into() {
                 Ok(affine.unwrap())
             } else {
@@ -436,7 +436,7 @@ impl MPCParameters {
             let mut g2_repr = <G2Affine as UncompressedEncoding>::Uncompressed::default();
             reader.read_exact(g2_repr.as_mut())?;
 
-            let affine = <G2Affine as UncompressedEncoding>::from_uncompressed(&g2_repr);
+            let affine = <G2Affine as UncompressedEncoding>::from_uncompressed_unchecked(&g2_repr);
             if affine.is_some().into() {
                 Ok(affine.unwrap())
             } else {
@@ -721,12 +721,16 @@ impl MPCParameters {
     /// sure their contribution is in the final parameters, by
     /// checking to see if it appears in the output of
     /// `MPCParameters::verify`.
-    pub fn contribute<R: Rng>(&mut self, rng: &mut R) -> [u8; 64] {
+    pub fn contribute<R: Rng>(&mut self, rng: &mut R, progress_update_interval: &u32) -> [u8; 64] {
         // Generate a keypair
         let (pubkey, privkey) = keypair(rng, self);
 
-        fn batch_exp<C: PrimeCurveAffine>(bases: &mut [C], coeff: <C as PrimeCurveAffine>::Scalar)
-        where
+        fn batch_exp<C: PrimeCurveAffine>(
+            bases: &mut [C],
+            coeff: <C as PrimeCurveAffine>::Scalar,
+            progress_update_interval: &u32,
+            total_exps: &u32,
+        ) where
             C::Curve: WnafGroup,
         {
             //let coeff = coeff.to_repr();
@@ -747,9 +751,15 @@ impl MPCParameters {
                 {
                     scope.spawn(move |_scope| {
                         let mut wnaf = Wnaf::new();
-
+                        let mut count = 0;
                         for (base, projective) in bases.iter_mut().zip(projective.iter_mut()) {
                             *projective = wnaf.base(base.to_curve(), 1).scalar(&coeff);
+                            count = count + 1;
+                            if *progress_update_interval > 0
+                                && count % *progress_update_interval == 0
+                            {
+                                println!("progress {} {}", *progress_update_interval, *total_exps)
+                            }
                         }
                     });
                 }
@@ -778,8 +788,9 @@ impl MPCParameters {
         let delta_inv = privkey.delta.invert().unwrap(); //expect("nonzero");
         let mut l = (&self.params.l[..]).to_vec();
         let mut h = (&self.params.h[..]).to_vec();
-        batch_exp(&mut l, delta_inv);
-        batch_exp(&mut h, delta_inv);
+        let total_exps = (l.len() + h.len()) as u32;
+        batch_exp(&mut l, delta_inv, &progress_update_interval, &total_exps);
+        batch_exp(&mut h, delta_inv, &progress_update_interval, &total_exps);
         self.params.l = Arc::new(l);
         self.params.h = Arc::new(h);
 
@@ -950,7 +961,7 @@ impl MPCParameters {
     /// we won't perform curve validity and group order
     /// checks.
     pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<MPCParameters> {
-        let params = Parameters::read(&mut reader, checked)?;
+        let params = fast_deserialize::read(&mut reader, checked)?;
 
         let mut cs_hash = [0u8; 64];
         reader.read_exact(&mut cs_hash)?;
@@ -1005,10 +1016,11 @@ impl PublicKey {
 
     fn read<R: Read>(mut reader: R) -> io::Result<PublicKey> {
         let read_g1 = |reader: &mut R| -> io::Result<G1Affine> {
-            let mut g1_repr = <G1Affine as GroupEncoding>::Repr::default();
+            let mut g1_repr = <G1Affine as UncompressedEncoding>::Uncompressed::default();
             reader.read_exact(g1_repr.as_mut())?;
 
-            let affine = G1Affine::from_bytes(&g1_repr);
+            let affine = <G1Affine as UncompressedEncoding>::from_uncompressed(&g1_repr);
+
             let affine = if affine.is_some().into() {
                 Ok(affine.unwrap())
             } else {
@@ -1028,10 +1040,10 @@ impl PublicKey {
         };
 
         let read_g2 = |reader: &mut R| -> io::Result<G2Affine> {
-            let mut g2_repr = <G2Affine as GroupEncoding>::Repr::default();
+            let mut g2_repr = <G2Affine as UncompressedEncoding>::Uncompressed::default();
             reader.read_exact(g2_repr.as_mut())?;
 
-            let affine = G2Affine::from_bytes(&g2_repr);
+            let affine = <G2Affine as UncompressedEncoding>::from_uncompressed(&g2_repr);
             let affine = if affine.is_some().into() {
                 Ok(affine.unwrap())
             } else {
@@ -1341,11 +1353,9 @@ fn keypair<R: Rng>(mut rng: R, current: &MPCParameters) -> (PublicKey, PrivateKe
 fn hash_to_g2(digest: &[u8]) -> G2Projective {
     assert!(digest.len() >= 32);
 
-    G2Projective::random(ChaChaRng::from_seed(
-        digest
-            .try_into()
-            .unwrap_or_else(|_| panic!("assertion above guarantees this to work")),
-    ))
+    let mut seed = [0u8; 32];
+    seed.copy_from_slice(&digest[0..32]);
+    G2Projective::random(ChaChaRng::from_seed(seed))
 }
 
 /// Abstraction over a writer which hashes the data being written.
