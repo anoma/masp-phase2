@@ -211,7 +211,6 @@ use group::{prime::PrimeCurveAffine, Curve, Group, UncompressedEncoding, Wnaf, W
 use pairing::PairingCurveAffine;
 use std::ops::AddAssign;
 use std::ops::Mul;
-use tracing::info;
 
 #[cfg(not(feature = "wasm"))]
 use bellman::multicore::Worker;
@@ -756,11 +755,6 @@ impl MPCParameters {
                         for (base, projective) in bases.iter_mut().zip(projective.iter_mut()) {
                             *projective = wnaf.base(base.to_curve(), 1).scalar(&coeff);
                             count = count + 1;
-                            if *progress_update_interval > 0
-                                && count % *progress_update_interval == 0
-                            {
-                                info!("progress {} {}", *progress_update_interval, *total_exps)
-                            }
                         }
                     });
                 }

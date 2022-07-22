@@ -5,7 +5,6 @@ use group::UncompressedEncoding;
 use rayon::prelude::*;
 use std::io::{self, Read};
 use std::sync::Arc;
-use tracing::debug;
 
 pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls12>> {
     use std::time::Instant;
@@ -74,7 +73,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
         };
 
     let vk = VerifyingKey::<Bls12>::read(&mut reader)?;
-    debug!("VerifyingKey: {:.2?}", now.elapsed());
 
     let h;
     let l;
@@ -93,7 +91,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g1)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    debug!("h: {:.2?}", now.elapsed());
 
     {
         let len = reader.read_u32::<BigEndian>()? as usize;
@@ -106,7 +103,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g1)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    debug!("l: {:.2?}", now.elapsed());
 
     {
         let len = reader.read_u32::<BigEndian>()? as usize;
@@ -119,7 +115,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g1)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    debug!("a: {:.2?}", now.elapsed());
 
     {
         let len = reader.read_u32::<BigEndian>()? as usize;
@@ -132,7 +127,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g1)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    debug!("b_g1: {:.2?}", now.elapsed());
 
     {
         let len = reader.read_u32::<BigEndian>()? as usize;
@@ -145,7 +139,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g2)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    debug!("b_g2: {:.2?}", now.elapsed());
 
     Ok(Parameters {
         vk,
