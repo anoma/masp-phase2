@@ -755,11 +755,6 @@ impl MPCParameters {
                         for (base, projective) in bases.iter_mut().zip(projective.iter_mut()) {
                             *projective = wnaf.base(base.to_curve(), 1).scalar(&coeff);
                             count = count + 1;
-                            if *progress_update_interval > 0
-                                && count % *progress_update_interval == 0
-                            {
-                                println!("progress {} {}", *progress_update_interval, *total_exps)
-                            }
                         }
                     });
                 }

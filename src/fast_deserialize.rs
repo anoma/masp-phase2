@@ -73,7 +73,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
         };
 
     let vk = VerifyingKey::<Bls12>::read(&mut reader)?;
-    println!("VerifyingKey: {:.2?}", now.elapsed());
 
     let h;
     let l;
@@ -92,7 +91,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g1)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    println!("h: {:.2?}", now.elapsed());
 
     {
         let len = reader.read_u32::<BigEndian>()? as usize;
@@ -105,7 +103,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g1)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    println!("l: {:.2?}", now.elapsed());
 
     {
         let len = reader.read_u32::<BigEndian>()? as usize;
@@ -118,7 +115,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g1)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    println!("a: {:.2?}", now.elapsed());
 
     {
         let len = reader.read_u32::<BigEndian>()? as usize;
@@ -131,7 +127,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g1)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    println!("b_g1: {:.2?}", now.elapsed());
 
     {
         let len = reader.read_u32::<BigEndian>()? as usize;
@@ -144,7 +139,6 @@ pub fn read<R: Read>(mut reader: R, checked: bool) -> io::Result<Parameters<Bls1
             .map(process_g2)
             .collect::<io::Result<Vec<_>>>()?;
     }
-    println!("b_g2: {:.2?}", now.elapsed());
 
     Ok(Parameters {
         vk,
