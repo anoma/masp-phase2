@@ -350,7 +350,7 @@ impl<Fr: PrimeField> ConstraintSystem<Fr> for KeypairAssembly<Fr> {
 pub struct MPCParameters {
     params: Parameters<Bls12>,
     cs_hash: [u8; 64],
-    contributions: Vec<PublicKey>,
+    pub contributions: Vec<PublicKey>,
 }
 
 impl PartialEq for MPCParameters {
@@ -425,11 +425,22 @@ impl MPCParameters {
             reader.read_exact(g1_repr.as_mut())?;
 
             let affine = <G1Affine as UncompressedEncoding>::from_uncompressed_unchecked(&g1_repr);
-            if affine.is_some().into() {
+            let affine = if affine.is_some().into() {
                 Ok(affine.unwrap())
             } else {
                 Err(io::Error::new(io::ErrorKind::InvalidData, "invalid G1"))
-            }
+            };
+
+            affine.and_then(|e| {
+                if e.is_identity().into() {
+                    Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "point at infinity",
+                    ))
+                } else {
+                    Ok(e)
+                }
+            })
         };
 
         let read_g2 = |reader: &mut BufReader<File>| -> io::Result<G2Affine> {
@@ -437,11 +448,22 @@ impl MPCParameters {
             reader.read_exact(g2_repr.as_mut())?;
 
             let affine = <G2Affine as UncompressedEncoding>::from_uncompressed_unchecked(&g2_repr);
-            if affine.is_some().into() {
+            let affine = if affine.is_some().into() {
                 Ok(affine.unwrap())
             } else {
                 Err(io::Error::new(io::ErrorKind::InvalidData, "invalid G2"))
-            }
+            };
+
+            affine.and_then(|e| {
+                if e.is_identity().into() {
+                    Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "point at infinity",
+                    ))
+                } else {
+                    Ok(e)
+                }
+            })
         };
 
         let alpha = read_g1(f)?;
@@ -733,8 +755,6 @@ impl MPCParameters {
         ) where
             C::Curve: WnafGroup,
         {
-            //let coeff = coeff.to_repr();
-
             let mut projective = vec![C::Curve::identity(); bases.len()];
             let cpus = num_cpus::get();
             let chunk_size = if bases.len() < cpus {
@@ -773,14 +793,9 @@ impl MPCParameters {
                 }
             })
             .unwrap();
-
-            // Turn it all back into affine points
-            //for (projective, affine) in projective.iter().zip(bases.iter_mut()) {
-            //    *affine = projective.to_affine();
-            //}
         }
 
-        let delta_inv = privkey.delta.invert().unwrap(); //expect("nonzero");
+        let delta_inv = privkey.delta.invert().unwrap();
         let mut l = (&self.params.l[..]).to_vec();
         let mut h = (&self.params.h[..]).to_vec();
         let total_exps = (l.len() + h.len()) as u32;
@@ -999,7 +1014,7 @@ pub struct PublicKey {
 }
 
 impl PublicKey {
-    fn write<W: Write>(&self, mut writer: W) -> io::Result<()> {
+    pub fn write<W: Write>(&self, mut writer: W) -> io::Result<()> {
         writer.write_all(self.delta_after.to_uncompressed().as_ref())?;
         writer.write_all(self.s.to_uncompressed().as_ref())?;
         writer.write_all(self.s_delta.to_uncompressed().as_ref())?;
@@ -1354,7 +1369,7 @@ fn hash_to_g2(digest: &[u8]) -> G2Projective {
 }
 
 /// Abstraction over a writer which hashes the data being written.
-struct HashWriter<W: Write> {
+pub struct HashWriter<W: Write> {
     writer: W,
     hasher: Blake2b512,
 }
